@@ -229,7 +229,7 @@ def main():
 
         # 6. Draw elegant quotation marks
         quote_icon = "“"
-        quote_font = ImageFont.truetype(font_path, size=120, layout_engine=ImageFont.Layout.RAQM)
+        quote_font = ImageFont.truetype(font_path, size=150, layout_engine=ImageFont.Layout.RAQM)
         draw.text((W / 2, top + 15), quote_icon, font=quote_font, fill=(255, 255, 255, 180), anchor="ma")
 
         # 7. Draw Kinetic Wrapped Lines (Alternating staggered alignments)
@@ -256,7 +256,7 @@ def main():
             line_y = current_y + 10
             draw.line([W/2 - 120, line_y, W/2 + 120, line_y], fill=(255, 255, 255, 100), width=3)
             
-            tagline_font = ImageFont.truetype(font_path, size=28, layout_engine=ImageFont.Layout.RAQM)
+            tagline_font = ImageFont.truetype(font_path, size=60, layout_engine=ImageFont.Layout.RAQM)
             # Render Author name in rich gold accent (#FFAA33)
             draw.text((W / 2, line_y + 20), author_name, font=tagline_font, fill=(255, 170, 51, 220), anchor="ma")
 
