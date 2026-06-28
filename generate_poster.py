@@ -5,31 +5,56 @@ import requests
 from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime
 
+# Initialize Pygame's hardware-accelerated Font System
+import pygame
+pygame.font.init()
+
 # Pre-filled directly from your Google Sheet ID
 GOOGLE_SHEET_ID = "1rmyyD1lS3uAZ4c9WAkmTekDrrcx4X3jdvpJz8DWyhX0"
-
-# Target ONLY the first tab ("New Quotes") using gid=0
 CSV_URL = f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/export?format=csv&gid=0"
 
-# Google Font URLs for your requested styles
 FONT_URLS = {
     "Anek Kannada": "https://github.com/google/fonts/raw/main/ofl/anekkannada/AnekKannada%5Bwdth,wght%5D.ttf",
     "Hubballi": "https://github.com/google/fonts/raw/main/ofl/hubballi/Hubballi-Regular.ttf"
 }
 
-def wrap_text(text, font, max_width):
+# A curated selection of professional, high-end gradients
+GRADIENTS = [
+    ((255, 120, 150), (120, 80, 220)), # Pink to Deep Cosmic Purple
+    ((255, 160, 140), (255, 210, 140)), # Soft Peach Sunset
+    ((18, 120, 150), (100, 200, 220)),  # Soft Turquoise Sea
+    ((33, 147, 176), (109, 213, 237)),  # Ocean Breeze Blue
+    ((241, 39, 17), (245, 175, 25)),    # Warm Sunrise Glow
+    ((11, 72, 107), (245, 194, 66)),    # Deep Midnight Blue to Warm Gold
+    ((118, 184, 111), (118, 174, 93))   # Fresh Pastel Meadow Green
+]
+
+def generate_gradient_background(W, H):
     """
-    Splits a single long string into multiple lines based on font size 
-    and maximum pixel width limits.
+    Procedurally generates a smooth, modern linear gradient inside Python.
+    Eliminates busy backgrounds and loads instantly.
     """
+    color1, color2 = random.choice(GRADIENTS)
+    base = Image.new('RGB', (W, H), color1)
+    top_layer = Image.new('RGB', (W, H), color2)
+    
+    mask = Image.new('L', (W, H))
+    mask_draw = ImageDraw.Draw(mask)
+    
+    for y in range(H):
+        alpha = int((y / float(H)) * 255)
+        mask_draw.line((0, y, W, y), fill=alpha)
+        
+    return Image.composite(top_layer, base, mask)
+
+def wrap_text_pygame(text, pygame_font, max_width):
     words = text.split(' ')
     lines = []
     current_line = []
     
     for word in words:
         test_line = ' '.join(current_line + [word])
-        bbox = font.getbbox(test_line)
-        width = bbox[2] - bbox[0]
+        width, _ = pygame_font.size(test_line)
         
         if width <= max_width:
             current_line.append(word)
@@ -46,7 +71,7 @@ def wrap_text(text, font, max_width):
 def fetch_quotes_from_sheets():
     quotes = []
     try:
-        print("Connecting exclusively to the 'New Quotes' sheet...")
+        print("Connecting to your Google Sheet database...")
         response = requests.get(CSV_URL, timeout=15)
         if response.status_code == 200:
             lines = response.content.decode('utf-8').splitlines()
@@ -68,8 +93,6 @@ def fetch_quotes_from_sheets():
                             "text": text_val,
                             "prompt": prompt_val
                         })
-        else:
-            print(f"Error: Google Sheets responded with status code {response.status_code}")
     except Exception as e:
         print(f"Failed to fetch Google Sheets: {e}")
     return quotes
@@ -80,104 +103,117 @@ def main():
         print("Error: No valid quotes loaded from your Google Sheet.")
         return
 
-    today_str = datetime.now().strftime("%Y-%m-%d")
-    today_quotes = [q for q in quotes if q["date"] == today_str]
+    print(f"\nSUCCESS: Loaded {len(quotes)} quotes from Google Sheets.")
+    print(f"Generating high-definition posters for ALL rows...\n")
 
-    if today_quotes:
-        today_quote = random.choice(today_quotes)
-        print(f"Found quote matching today's date ({today_str}).")
-    else:
-        print(f"No quotes scheduled specifically for today ({today_str}). Selecting a random fallback quote.")
-        today_quote = random.choice(quotes)
+    # Download active font files locally
+    font_files = {}
+    for name, url in FONT_URLS.items():
+        filename = f"{name.replace(' ', '_').lower()}.ttf"
+        if not os.path.exists(filename):
+            print(f"Downloading font: {name}")
+            response = requests.get(url, timeout=15)
+            with open(filename, "wb") as f:
+                f.write(response.content)
+        font_files[name] = filename
 
-    category = today_quote["category"]
-    text = today_quote["text"]
-    bg_prompt = today_quote["prompt"]
+    # LOOP THROUGH EVERY ROW IN THE SHEET
+    for idx, q in enumerate(quotes):
+        category = q["category"]
+        text = q["text"]
+        date_str = q["date"].replace("-", "")
 
-    # 1. Fetch free AI background from Pollinations.ai
-    encoded_prompt = requests.utils.quote(bg_prompt)
-    bg_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1080&height=1080&nologo=true"
-    
-    print(f"Requesting AI Image background for prompt: {bg_prompt}")
-    bg_response = requests.get(bg_url, timeout=30)
-    with open("temp_bg.jpg", "wb") as f:
-        f.write(bg_response.content)
+        print(f"[{idx + 1}/{len(quotes)}] Generating poster for: '{text[:25]}...'")
 
-    # 2. Open image in Pillow
-    img = Image.open("temp_bg.jpg")
-    W, H = img.size
+        # 1. Generate full-screen gradient background
+        W, H = 1080, 1080
+        img = generate_gradient_background(W, H)
 
-    # 3. Download and apply font style (Anek Kannada or Hubballi)
-    font_name, font_download_url = random.choice(list(FONT_URLS.items()))
-    print(f"Downloading and applying typography style: {font_name}")
-    
-    font_response = requests.get(font_download_url, timeout=15)
-    with open("selected_font.ttf", "wb") as f:
-        f.write(font_response.content)
-    
-    font = ImageFont.truetype("selected_font.ttf", size=42)
+        # 2. Select a font style
+        font_name = random.choice(list(FONT_URLS.keys()))
+        font_path = font_files[font_name]
 
-    # 4. Perform Word Wrapping
-    max_text_width = 750  
-    wrapped_lines = wrap_text(text, font, max_text_width)
+        # 3. DYNAMICALLY SCALE FONT SIZE (Very big text for shorter quotes)
+        text_length = len(text)
+        if text_length < 35:
+            font_size = 72
+        elif text_length < 65:
+            font_size = 56
+        else:
+            font_size = 46
 
-    # 5. Calculate Dynamic Card Height
-    line_spacing = 15
-    total_text_height = 0
-    line_heights = []
-    
-    for line in wrapped_lines:
-        bbox = font.getbbox(line)
-        line_h = bbox[3] - bbox[1]
-        line_heights.append(line_h)
-        total_text_height += line_h
-    
-    total_text_height += line_spacing * (len(wrapped_lines) - 1)
+        pg_font = pygame.font.Font(font_path, font_size)
 
-    # Calculate card dimensions with vertical padding
-    padding_y = 45
-    card_w = 850
-    card_h = total_text_height + (padding_y * 2)
+        # 4. Perform Word Wrapping
+        max_text_width = 900 # Wide margins for full-screen text focus
+        wrapped_lines = wrap_text_pygame(text, pg_font, max_text_width)
 
-    # Define card boundary rectangles
-    left = (W - card_w) / 2
-    top = (H - card_h) / 2
-    right = left + card_w
-    bottom = top + card_h
+        # 5. Render lines into transparent image layers with 3D shadows
+        line_spacing = 18
+        total_text_height = 0
+        line_layers = []
 
-    # Draw rounded transparent card
-    overlay = Image.new('RGBA', img.size, (0, 0, 0, 0))
-    overlay_draw = ImageDraw.Draw(overlay)
-    overlay_draw.rounded_rectangle([left, top, right, bottom], radius=20, fill=(0, 0, 0, 140))
-    
-    img = Image.alpha_composite(img.convert('RGBA'), overlay)
-    draw = ImageDraw.Draw(img)
+        for line in wrapped_lines:
+            # Render perfectly shaped text (White foreground)
+            text_surface = pg_font.render(line, True, (255, 255, 255))
+            surface_bytes = pygame.image.tobytes(text_surface, "RGBA")
+            fg_img = Image.frombytes("RGBA", text_surface.get_size(), surface_bytes)
 
-    # 6. Draw the Wrapped Text Lines (Centered precisely)
-    current_y = top + padding_y
-    for i, line in enumerate(wrapped_lines):
-        # Draw horizontally centered (Pillow automatically uses HarfBuzz if libraqm is installed on the system)
-        draw.text((W / 2, current_y), line, font=font, fill="white", anchor="ma")
-        current_y += line_heights[i] + line_spacing
+            # Render matching shadow text (Semi-transparent black)
+            shadow_surface = pg_font.render(line, True, (0, 0, 0))
+            shadow_bytes = pygame.image.tobytes(shadow_surface, "RGBA")
+            bg_img = Image.frombytes("RGBA", shadow_surface.get_size(), shadow_bytes)
 
-    # 7. Draw the Kannada Watermark "ಸಾಹಿತ್ಯ ಕೀಬೋರ್ಡ್‌" in the bottom-right corner
-    watermark_text = "ಸಾಹಿತ್ಯ ಕೀಬೋರ್ಡ್‌"
-    watermark_font = ImageFont.truetype("selected_font.ttf", size=24)
-    draw.text((W - 40, H - 40), watermark_text, font=watermark_font, fill=(255, 255, 255, 180), anchor="rd")
+            line_layers.append((fg_img, bg_img))
+            total_text_height += fg_img.height
 
-    # 8. Save the final high-definition PNG to the correct category folder
-    output_dir = f"images/{category}"
-    os.makedirs(output_dir, exist_ok=True)
-    
-    file_date_str = today_str.replace("-", "")
-    output_path = f"{output_dir}/quote_{file_date_str}.png"
-    img.convert('RGB').save(output_path, "PNG")
-    
-    print("-" * 50)
-    print(f"SUCCESS: Generated HD Poster with '{font_name}' font.")
-    print(f"Category: {category}")
-    print(f"Output File: {output_path}")
-    print("-" * 50)
+        total_text_height += line_spacing * (len(wrapped_lines) - 1)
+
+        # 6. Paste text layers centered vertically onto the gradient canvas
+        current_y = (H - total_text_height) // 2
+        for fg_img, bg_img in line_layers:
+            line_x = (W - fg_img.width) // 2
+            
+            # Draw the 3D drop shadow layer first (shifted by 5 pixels)
+            shadow_offset = 5
+            shadow_alpha = Image.new("L", bg_img.size, 160) # 60% opacity shadow
+            img.paste(bg_img, (line_x + shadow_offset, int(current_y) + shadow_offset), shadow_alpha)
+            
+            # Draw the clean white foreground text layer directly on top
+            img.paste(fg_img, (line_x, int(current_y)), fg_img)
+            current_y += fg_img.height + line_spacing
+
+        # 7. Render and draw the watermark "ಸಾಹಿತ್ಯ ಕೀಬೋರ್ಡ್‌"
+        watermark_font = pygame.font.Font(font_path, 26)
+        
+        # Render white watermark and shadow layer
+        wm_fg_surface = watermark_font.render("ಸಾಹಿತ್ಯ ಕೀಬೋರ್ಡ್‌", True, (255, 255, 255))
+        wm_bg_surface = watermark_font.render("ಸಾಹಿತ್ಯ ಕೀಬೋರ್ಡ್‌", True, (0, 0, 0))
+        
+        wm_fg_bytes = pygame.image.tobytes(wm_fg_surface, "RGBA")
+        wm_bg_bytes = pygame.image.tobytes(wm_bg_surface, "RGBA")
+        
+        wm_fg_img = Image.frombytes("RGBA", wm_fg_surface.get_size(), wm_fg_bytes)
+        wm_bg_img = Image.frombytes("RGBA", wm_bg_surface.get_size(), wm_bg_bytes)
+
+        wm_x = W - wm_fg_img.width - 50
+        wm_y = H - wm_fg_img.height - 50
+
+        # Draw watermark shadow
+        wm_shadow_alpha = Image.new("L", wm_bg_img.size, 140)
+        img.paste(wm_bg_img, (wm_x + 3, wm_y + 3), wm_shadow_alpha)
+        # Draw watermark foreground
+        img.paste(wm_fg_img, (wm_x, wm_y), wm_fg_img)
+
+        # 8. Save the high-definition poster file
+        output_dir = f"images/{category}"
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Save filename as quote_date_index.png to support multiple files per day
+        output_path = f"{output_dir}/quote_{date_str}_{idx + 1}.png"
+        img.convert('RGB').save(output_path, "PNG")
+
+    print(f"\nSUCCESS: Generated {len(quotes)} high-definition quote posters on gradient backgrounds!")
 
 if __name__ == "__main__":
     main()
