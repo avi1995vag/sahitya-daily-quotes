@@ -26,15 +26,15 @@ jobs:
         with:
           python-version: '3.11'
 
-      # FIXED: Uninstalls the precompiled binary wheel and compiles Pillow from source with native Raqm enabled
+      # FIXED: Added 'pygame' back to the pip install line
       - name: Install Dependencies & Compile Pillow from Source
         run: |
           python -m pip install --upgrade pip
-          pip install requests
+          pip install requests pygame
           pip uninstall -y pillow
           pip install --no-binary :all: pillow
 
-      # Generates 30 beautiful posters with zero formatting errors
+      # Generates 36 beautiful posters with zero formatting errors
       - name: Run AI Poster Generator
         run: python generate_poster.py
 
@@ -42,7 +42,7 @@ jobs:
         run: |
           node -e '
           const fs = require("fs");
-          const categories = ["daily_special", "inspirational", "life", "love", "motivational"];
+          const categories = ["daily_special", "inspirational", "life", "love", "motivational", "author_quote"];
           const output = [];
           const owner = "avi1995vag";
           const repo = "sahitya-daily-quotes";
