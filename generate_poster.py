@@ -7,15 +7,14 @@ import hashlib
 from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime
 
-# Forces Pygame to run headlessly on Linux servers
-os.environ["SDL_VIDEODRIVER"] = "dummy"
-
-import pygame
-pygame.font.init()
-
+# Pre-filled directly from your Google Sheet ID
 GOOGLE_SHEET_ID = "1rmyyD1lS3uAZ4c9WAkmTekDrrcx4X3jdvpJz8DWyhX0"
 CSV_URL = f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/export?format=csv&gid=0"
 
+# TODO: Add your free Pexels API Key here to load premium dark bokeh stock photos
+PEXELS_API_KEY = "We2njvb6rYtUvXMH2fuU6IjHgSjOlpsUVFRCSibahkalqXN3m7v7eriF"
+
+# Google Font URLs for your requested styles
 FONT_URLS = {
     "Anek Kannada": "https://github.com/google/fonts/raw/main/ofl/anekkannada/AnekKannada%5Bwdth,wght%5D.ttf",
     "Hubballi": "https://github.com/google/fonts/raw/main/ofl/hubballi/Hubballi-Regular.ttf"
@@ -30,6 +29,7 @@ GRADIENTS = [
 ]
 
 def generate_dark_gradient(W, H):
+    """Procedurally generates a smooth, modern dark gradient background."""
     color1, color2 = random.choice(GRADIENTS)
     base = Image.new('RGB', (W, H), color1)
     top_layer = Image.new('RGB', (W, H), color2)
@@ -40,13 +40,44 @@ def generate_dark_gradient(W, H):
         mask_draw.line((0, y, W, y), fill=alpha)
     return Image.composite(top_layer, base, mask)
 
-def wrap_text_pygame(text, pygame_font, max_width):
+def fetch_pexels_background(prompt, W, H):
+    """Fetches high-end dark, moody, or minimalist stock photos matching the prompt."""
+    if not PEXELS_API_KEY or PEXELS_API_KEY == "YOUR_PEXELS_API_KEY_HERE":
+        return None
+    
+    headers = {"Authorization": PEXELS_API_KEY}
+    search_query = "dark minimalist abstract"
+    if "special" in prompt.lower() or "festive" in prompt.lower():
+        search_query = "gold bokeh dark abstract"
+        
+    url = f"https://api.pexels.com/v1/search?query={requests.utils.quote(search_query)}&per_page=15"
+    
+    try:
+        response = requests.get(url, headers=headers, timeout=15)
+        if response.status_code == 200:
+            data = response.json()
+            photos = data.get("photos", [])
+            if photos:
+                photo = random.choice(photos)
+                img_url = photo["src"].get("large2x") or photo["src"].get("original")
+                if img_url:
+                    print(f"Downloading Pexels Stock Background: {img_url}")
+                    img_response = requests.get(img_url, timeout=30)
+                    with open("temp_bg.jpg", "wb") as f:
+                        f.write(img_response.content)
+                    return Image.open("temp_bg.jpg").resize((W, H))
+    except Exception as e:
+        print(f"Failed to fetch Pexels background: {e}")
+    return None
+
+def wrap_text(text, font, max_width):
     words = text.split(' ')
     lines = []
     current_line = []
     for word in words:
         test_line = ' '.join(current_line + [word])
-        width, _ = pygame_font.size(test_line)
+        bbox = font.getbbox(test_line)
+        width = bbox[2] - bbox[0]
         if width <= max_width:
             current_line.append(word)
         else:
@@ -125,6 +156,7 @@ def main():
     for idx, q in enumerate(quotes):
         category = q["category"]
         raw_text = q["text"]
+        bg_prompt = q["prompt"]
         date_str = q["date"].replace("-", "")
 
         # A. ROBUST REGEX AUTHOR PARSING (Successfully parses '?.- ಕುವೆಂಪು', ', - author', etc.)
@@ -139,14 +171,16 @@ def main():
 
         print(f"[{idx + 1}/{len(quotes)}] Generating creative layout for: '{quote_body[:25]}...'")
 
-        # 2. Generate dark background
-        img = generate_dark_gradient(W, H)
+        # 1. Fetch Background
+        img = fetch_pexels_background(bg_prompt, W, H)
+        if img is None:
+            img = generate_dark_gradient(W, H)
 
-        # 3. Select a font style
+        # 2. Select a font style
         font_name = random.choice(list(FONT_URLS.keys()))
         font_path = font_files[font_name]
 
-        # 4. SUPER-SIZED TYPOGRAPHY (Large fonts to fill space)
+        # 3. SUPER-SIZED TYPOGRAPHY (Large fonts to fill space)
         text_length = len(quote_body)
         if text_length < 35:
             font_size = 85
@@ -155,32 +189,23 @@ def main():
         else:
             font_size = 52
 
-        pg_font = pygame.font.Font(font_path, font_size)
+        # Engage Raqm layout engine directly inside Pillow for correct complex Kannada layout shaping
+        font = ImageFont.truetype(font_path, size=font_size, layout_engine=ImageFont.Layout.RAQM)
 
-        # 5. Perform Word Wrapping
+        # 4. Perform Word Wrapping
         max_text_width = 860 
-        wrapped_lines = wrap_text_pygame(quote_body, pg_font, max_text_width)
+        wrapped_lines = wrap_text(quote_body, font, max_text_width)
 
-        # 6. Calculate Dynamic Card Height with 1.35x Safety Multiplier
+        # 5. Calculate Dynamic Card Height with 1.35x Safety Multiplier
         line_spacing = 20
         total_text_height = 0
-        line_layers = []
+        line_heights = []
 
         for line in wrapped_lines:
-            # Alternating Kinetic Colors: Even lines White, Odd lines Soft Yellow/Gold (#FFE17D)
-            is_even = len(line_layers) % 2 == 0
-            text_color = (255, 255, 255) if is_even else (255, 225, 125)
-
-            text_surface = pg_font.render(line, True, text_color)
-            surface_bytes = pygame.image.tobytes(text_surface, "RGBA")
-            fg_img = Image.frombytes("RGBA", text_surface.get_size(), surface_bytes)
-
-            shadow_surface = pg_font.render(line, True, (0, 0, 0))
-            shadow_bytes = pygame.image.tobytes(shadow_surface, "RGBA")
-            bg_img = Image.frombytes("RGBA", shadow_surface.get_size(), shadow_bytes)
-
-            line_layers.append((fg_img, bg_img))
-            total_text_height += int(fg_img.height * 1.35)
+            bbox = font.getbbox(line)
+            line_h = bbox[3] - bbox[1]
+            line_heights.append(line_h)
+            total_text_height += int(line_h * 1.35)
 
         total_text_height += line_spacing * (len(wrapped_lines) - 1)
 
@@ -202,34 +227,31 @@ def main():
         img = Image.alpha_composite(img.convert('RGBA'), overlay)
         draw = ImageDraw.Draw(img)
 
-        # 7. Draw quotation marks
+        # 6. Draw elegant quotation marks
         quote_icon = "“"
-        quote_font = ImageFont.truetype(font_path, size=120)
+        quote_font = ImageFont.truetype(font_path, size=120, layout_engine=ImageFont.Layout.RAQM)
         draw.text((W / 2, top + 15), quote_icon, font=quote_font, fill=(255, 255, 255, 180), anchor="ma")
 
-        # 8. Draw Kinetic Wrapped Lines (Alternating staggered alignments)
+        # 7. Draw Kinetic Wrapped Lines (Alternating staggered alignments)
         current_y = top + padding_y + 80
-        for i, (fg_img, bg_img) in enumerate(line_layers):
-            base_x = (W - fg_img.width) // 2
-            
+        for i, line in enumerate(wrapped_lines):
             # Kinetic Stagger: Shifts odd lines slightly left, even lines slightly right (-25px / +25px)
             stagger_offset = -25 if i % 2 == 1 else 25
-            line_x = base_x + stagger_offset
+            line_x = (W / 2) + stagger_offset
             
-            # Ensure text doesn't clipping-leak past the card edges
-            if line_x < left + 30: line_x = int(left + 30)
-            if line_x + fg_img.width > right - 30: line_x = int(right - 30 - fg_img.width)
+            # Alternating Kinetic Colors: Even lines White, Odd lines Soft Yellow/Gold (#FFE17D)
+            is_even = i % 2 == 0
+            text_color = (255, 255, 255) if is_even else (255, 225, 125)
 
             shadow_offset = 4
             # Draw shadow
-            shadow_alpha = Image.new("L", bg_img.size, 160)
-            img.paste(bg_img, (line_x + shadow_offset, int(current_y) + shadow_offset), shadow_alpha)
+            draw.text((line_x + shadow_offset, current_y + shadow_offset), line, font=font, fill=(0, 0, 0, 180), anchor="ma")
             # Draw text
-            img.paste(fg_img, (line_x, int(current_y)), fg_img)
+            draw.text((line_x, current_y), line, font=font, fill=text_color, anchor="ma")
             
-            current_y += int(fg_img.height * 1.35) + line_spacing
+            current_y += int(line_heights[i] * 1.35) + line_spacing
 
-        # 9. Draw Author Line Divider (Only if a real author is parsed)
+        # 8. Draw Author Line Divider (Only if a real author is parsed)
         if author_name:
             line_y = current_y + 10
             draw.line([W/2 - 120, line_y, W/2 + 120, line_y], fill=(255, 255, 255, 100), width=3)
@@ -238,7 +260,7 @@ def main():
             # Render Author name in rich gold accent (#FFAA33)
             draw.text((W / 2, line_y + 20), author_name, font=tagline_font, fill=(255, 170, 51, 220), anchor="ma")
 
-        # 10. Apply Custom Logo Watermark in Corner
+        # 9. Apply Custom Logo Watermark in Corner
         logo_path = "logo.png"
         if os.path.exists(logo_path):
             try:
@@ -254,11 +276,11 @@ def main():
             except Exception as e:
                 print(f"Failed to apply logo: {e}")
 
-        # 11. Save the final high-definition poster
+        # 10. Save the final high-definition poster
         output_dir = f"images/{category}"
         os.makedirs(output_dir, exist_ok=True)
         
-        # FIXED: Naming is now hashed based on content. No cached files will collide!
+        # Naming is hashed based on content. No cached files will collide!
         unique_hash = get_text_hash(quote_body)
         output_path = f"{output_dir}/quote_{date_str}_{unique_hash}.png"
         img.convert('RGB').save(output_path, "PNG")
