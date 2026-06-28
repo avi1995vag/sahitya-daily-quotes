@@ -28,7 +28,8 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pillow requests
+          # FIXED: Added 'pygame' here so the server installs it before running the script
+          pip install pygame pillow requests
 
       - name: Run AI Poster Generator
         run: python generate_poster.py
@@ -64,5 +65,5 @@ jobs:
       - name: Commit and Push Changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: "Auto-generated daily AI quote and quotes.json"
+          commit_message: "Auto-generated daily AI quotes and quotes.json"
           file_pattern: 'images/**/*.png quotes.json'
