@@ -26,11 +26,11 @@ jobs:
         with:
           python-version: '3.11'
 
-      # FIXED: Added 'pygame' back to the pip install line
+      # FIXED: Cleaned up Pygame. Compiles Pillow from source with native Raqm enabled
       - name: Install Dependencies & Compile Pillow from Source
         run: |
           python -m pip install --upgrade pip
-          pip install requests pygame
+          pip install requests
           pip uninstall -y pillow
           pip install --no-binary :all: pillow
 
