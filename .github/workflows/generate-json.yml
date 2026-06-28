@@ -15,6 +15,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Installs Linux System Shaper so Pillow native drawing renders Kannada perfectly
       - name: Install Linux Text-Shaping Libraries (HarfBuzz & Raqm)
         run: |
           sudo apt-get update
@@ -23,13 +24,13 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          # FIXED: Forced stable production Python 3.11 instead of experimental wildcard 3.x
           python-version: '3.11'
 
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pygame pillow requests
+          # Cleaned up pygame to save bandwidth and prevent compiler failures
+          pip install pillow requests
 
       - name: Run AI Poster Generator
         run: python generate_poster.py
@@ -66,4 +67,4 @@ jobs:
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Auto-generated daily AI quotes and quotes.json"
-          file_pattern: 'images/**/*.png quotes.json'
+          file_pattern: 'logo.png images/**/*.png quotes.json'
