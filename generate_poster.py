@@ -6,11 +6,11 @@ from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime
 
 # Pre-filled directly from your Google Sheet ID
-GOOGLE_SHEET_ID = "1rmyyD1Sl3uAZ4c9WAkmTekDrrcx4X3jdvpjz8DWyhX0"
+GOOGLE_SHEET_ID = "1rmyyD1lS3uAZ4c9WAkmTekDrrcx4X3jdvpJz8DWyhX0"
 CSV_URL = f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/export?format=csv&gid=0"
 
 # TODO: Add your free Pexels API Key here to load premium dark bokeh stock photos
-PEXELS_API_KEY = "YOUR_PEXELS_API_KEY_HERE"
+PEXELS_API_KEY = "We2njvb6rYtUvXMH2fuU6IjHgSjOlpsUVFRCSibahkalqXN3m7v7eriF"
 
 # Google Font URLs for your requested styles
 FONT_URLS = {
