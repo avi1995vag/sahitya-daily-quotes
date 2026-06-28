@@ -8,6 +8,10 @@
     "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/daily_special/pexels-polina-kovaleva-6185653.jpg"
   },
   {
+    "category": "daily_special",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/daily_special/treeday.jpg"
+  },
+  {
     "category": "inspirational",
     "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/inspirational/inspirationaltest.jpg"
   },
