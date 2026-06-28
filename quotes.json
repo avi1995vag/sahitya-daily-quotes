@@ -1,6 +1,10 @@
 [
   {
     "category": "daily_special",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/daily_special/dailyspecialtest.jpg"
+  },
+  {
+    "category": "daily_special",
     "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/daily_special/pexels-polina-kovaleva-6185653.jpg"
   },
   {
