@@ -1,0 +1,51 @@
+name: Generate Quotes JSON
+
+on:
+  push:
+    paths:
+      - 'images/**' # Runs automatically whenever you upload files to any images subfolder
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate JSON Database
+        run: |
+          node -e '
+          const fs = require("fs");
+          const categories = ["daily_special", "inspirational", "life", "love", "motivational"];
+          const output = [];
+          const owner = "avi1995vag";
+          const repo = "sahitya-daily-quotes";
+          const branch = "main";
+          
+          categories.forEach(category => {
+            const dir = `images/${category}`;
+            if (fs.existsSync(dir)) {
+              const files = fs.readdirSync(dir);
+              files.forEach(file => {
+                // Ignore placeholder text files and only register valid images
+                if (file !== "keep.txt" && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg"))) {
+                  output.push({
+                    category: category,
+                    imageUrl: `https://cdn.jsdelivr.net/gh/${owner}/${repo}@${branch}/${dir}/${file}`
+                  });
+                }
+              });
+            }
+          });
+          
+          fs.writeFileSync("quotes.json", JSON.stringify(output, null, 2));
+          '
+
+      - name: Commit and push changes
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Auto-generated quotes.json"
+          file_pattern: 'quotes.json'
