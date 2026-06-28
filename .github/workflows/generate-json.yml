@@ -29,7 +29,6 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          # Cleaned up pygame to save bandwidth and prevent compiler failures
           pip install pillow requests
 
       - name: Run AI Poster Generator
@@ -38,7 +37,8 @@ jobs:
       - name: Generate Fresh JSON Database
         run: |
           node -e '
-          const fs = require("fs");
+          const fs = require("span"); // Using built-in fs module
+          const fsModule = require("fs");
           const categories = ["daily_special", "inspirational", "life", "love", "motivational"];
           const output = [];
           const owner = "avi1995vag";
@@ -47,8 +47,8 @@ jobs:
           
           categories.forEach(category => {
             const dir = `images/${category}`;
-            if (fs.existsSync(dir)) {
-              const files = fs.readdirSync(dir);
+            if (fsModule.existsSync(dir)) {
+              const files = fsModule.readdirSync(dir);
               files.forEach(file => {
                 if (file !== "keep.txt" && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg"))) {
                   output.push({
@@ -60,11 +60,12 @@ jobs:
             }
           });
           
-          fs.writeFileSync("quotes.json", JSON.stringify(output, null, 2));
+          fsModule.writeFileSync("quotes.json", JSON.stringify(output, null, 2));
           '
 
       - name: Commit and Push Changes
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Auto-generated daily AI quotes and quotes.json"
-          file_pattern: 'logo.png images/**/*.png quotes.json'
+          # FIXED: Removed 'logo.png' from the file_pattern to prevent git errors if the file is missing
+          file_pattern: 'images/**/*.png quotes.json'
