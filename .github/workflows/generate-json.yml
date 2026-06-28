@@ -23,12 +23,12 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          # FIXED: Forced stable production Python 3.11 instead of experimental wildcard 3.x
+          python-version: '3.11'
 
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          # FIXED: Added 'pygame' here so the server installs it before running the script
           pip install pygame pillow requests
 
       - name: Run AI Poster Generator
