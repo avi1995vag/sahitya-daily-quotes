@@ -6,7 +6,7 @@ from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime
 
 # Pre-filled directly from your Google Sheet screenshot
-GOOGLE_SHEET_ID = "1rmyyD1Sl3uAZ4c9WAkmTekDrrcx4X3jdvpjz8DWyhX0"
+GOOGLE_SHEET_ID = "1rmyyD1lS3uAZ4c9WAkmTekDrrcx4X3jdvpJz8DWyhX0"
 
 # Target ONLY the "New Quotes" sheet tab by name, ignoring "Old Quotes"
 CSV_URL = f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=New%20Quotes"
