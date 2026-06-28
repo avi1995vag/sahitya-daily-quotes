@@ -5,19 +5,11 @@ import requests
 from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime
 
-# SAFEGUARD: Forces Pygame to run headlessly on headless Linux servers (no display monitor required)
-os.environ["SDL_VIDEODRIVER"] = "dummy"
-
-import pygame
-pygame.font.init()
-
-# Pre-filled directly from your Google Sheet
+# Pre-filled directly from your Google Sheet ID
 GOOGLE_SHEET_ID = "1rmyyD1lS3uAZ4c9WAkmTekDrrcx4X3jdvpJz8DWyhX0"
-
-# Target ONLY the first tab ("New Quotes") using gid=0, bypassing any 404 blocks
 CSV_URL = f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/export?format=csv&gid=0"
 
-# TODO: Add your free Pexels API Key here to load premium dark bokeh stock photos
+# Add your free Pexels API Key here to load premium stock photos
 PEXELS_API_KEY = "We2njvb6rYtUvXMH2fuU6IjHgSjOlpsUVFRCSibahkalqXN3m7v7eriF"
 
 # Google Font URLs for your requested styles
@@ -26,16 +18,15 @@ FONT_URLS = {
     "Hubballi": "https://github.com/google/fonts/raw/main/ofl/hubballi/Hubballi-Regular.ttf"
 }
 
-# Dark, highly aesthetic background palettes
+# Dark, aesthetic backgrounds
 GRADIENTS = [
-    ((20, 20, 35), (45, 45, 65)),  # Cosmic Dark Blue
-    ((30, 20, 20), (60, 40, 40)),  # Dark Cherry Red
-    ((15, 25, 20), (35, 55, 45)),  # Deep Forest Green
-    ((24, 24, 24), (48, 48, 48))   # Modern Carbon Grey
+    ((20, 20, 35), (45, 45, 65)),  
+    ((30, 20, 20), (60, 40, 40)),  
+    ((15, 25, 20), (35, 55, 45)),  
+    ((24, 24, 24), (48, 48, 48))   
 ]
 
 def generate_dark_gradient(W, H):
-    """Procedurally generates a smooth, modern dark gradient background."""
     color1, color2 = random.choice(GRADIENTS)
     base = Image.new('RGB', (W, H), color1)
     top_layer = Image.new('RGB', (W, H), color2)
@@ -47,13 +38,10 @@ def generate_dark_gradient(W, H):
     return Image.composite(top_layer, base, mask)
 
 def fetch_pexels_background(prompt, W, H):
-    """Fetches high-end dark, moody, or minimalist stock photos matching the prompt."""
     if not PEXELS_API_KEY or PEXELS_API_KEY == "YOUR_PEXELS_API_KEY_HERE":
         return None
     
     headers = {"Authorization": PEXELS_API_KEY}
-    
-    # Target elegant, high-contrast, minimalist templates
     search_query = "dark minimalist abstract"
     if "special" in prompt.lower() or "festive" in prompt.lower():
         search_query = "gold bokeh dark abstract"
@@ -61,13 +49,11 @@ def fetch_pexels_background(prompt, W, H):
     url = f"https://api.pexels.com/v1/search?query={requests.utils.quote(search_query)}&per_page=15"
     
     try:
-        # FIXED: Corrected 'apiUrl' variable to 'url' to resolve execution crashes
         response = requests.get(url, headers=headers, timeout=15)
         if response.status_code == 200:
             data = response.json()
             photos = data.get("photos", [])
             if photos:
-                # Pick a random photo from the matching list for variety
                 photo = random.choice(photos)
                 img_url = photo["src"].get("large2x") or photo["src"].get("original")
                 if img_url:
@@ -80,13 +66,14 @@ def fetch_pexels_background(prompt, W, H):
         print(f"Failed to fetch Pexels background: {e}")
     return None
 
-def wrap_text_pygame(text, pygame_font, max_width):
+def wrap_text(text, font, max_width):
     words = text.split(' ')
     lines = []
     current_line = []
     for word in words:
         test_line = ' '.join(current_line + [word])
-        width, _ = pygame_font.size(test_line)
+        bbox = font.getbbox(test_line)
+        width = bbox[2] - bbox[0]
         if width <= max_width:
             current_line.append(word)
         else:
@@ -129,7 +116,7 @@ def main():
         print("Error: No valid quotes loaded from your Google Sheet.")
         return
 
-    # Download font files locally
+    # Download font files
     font_files = {}
     for name, url in FONT_URLS.items():
         filename = f"{name.replace(' ', '_').lower()}.ttf"
@@ -147,7 +134,7 @@ def main():
         bg_prompt = q["prompt"]
         date_str = q["date"].replace("-", "")
 
-        # A. PARSE AUTHOR NAMES: Split text if it contains standard hyphens or dashes
+        # A. Parse out any author name (e.g., split text if it contains standard hyphens)
         author_name = ""
         quote_body = raw_text
         for separator in [" - ", " — ", " -", " – "]:
@@ -159,7 +146,7 @@ def main():
 
         print(f"[{idx + 1}/{len(quotes)}] Generating creative layout for: '{quote_body[:25]}...'")
 
-        # 1. Fetch Background (Tries Pexels first, falls back to dark gradient if unconfigured)
+        # 1. Fetch Background
         img = fetch_pexels_background(bg_prompt, W, H)
         if img is None:
             img = generate_dark_gradient(W, H)
@@ -168,39 +155,32 @@ def main():
         font_name = random.choice(list(FONT_URLS.keys()))
         font_path = font_files[font_name]
 
-        # 3. SUPER-SIZED TYPOGRAPHY (Large fonts to cover empty space)
+        # 3. Super-sized text layout
         text_length = len(quote_body)
         if text_length < 35:
-            font_size = 85
+            font_size = 90
         elif text_length < 75:
-            font_size = 65
+            font_size = 70
         else:
-            font_size = 52
+            font_size = 70
 
-        pg_font = pygame.font.Font(font_path, font_size)
+        # Engage Raqm layout engine directly inside Pillow for correct complex Kannada layout shaping
+        font = ImageFont.truetype(font_path, size=font_size, layout_engine=ImageFont.Layout.RAQM)
 
         # 4. Perform Word Wrapping
         max_text_width = 860 
-        wrapped_lines = wrap_text_pygame(quote_body, pg_font, max_text_width)
+        wrapped_lines = wrap_text(quote_body, font, max_text_width)
 
         # 5. Calculate Dynamic Card Height with 1.35x Safety Multiplier (Prevents vertical overflow)
         line_spacing = 20
         total_text_height = 0
-        line_layers = []
+        line_heights = []
 
         for line in wrapped_lines:
-            text_surface = pg_font.render(line, True, (255, 255, 255))
-            surface_bytes = pygame.image.tobytes(text_surface, "RGBA")
-            fg_img = Image.frombytes("RGBA", text_surface.get_size(), surface_bytes)
-
-            shadow_surface = pg_font.render(line, True, (0, 0, 0))
-            shadow_bytes = pygame.image.tobytes(shadow_surface, "RGBA")
-            bg_img = Image.frombytes("RGBA", shadow_surface.get_size(), shadow_bytes)
-
-            line_layers.append((fg_img, bg_img))
-            
-            # Apply 1.35x scale factor to account for vertical consonant conjunct spacing
-            total_text_height += int(fg_img.height * 1.35)
+            bbox = font.getbbox(line)
+            line_h = bbox[3] - bbox[1]
+            line_heights.append(line_h)
+            total_text_height += int(line_h * 1.35)
 
         total_text_height += line_spacing * (len(wrapped_lines) - 1)
 
@@ -224,24 +204,20 @@ def main():
 
         # 6. Draw elegant quotation marks
         quote_icon = "“"
-        quote_font = ImageFont.truetype(font_path, size=120)
+        quote_font = ImageFont.truetype(font_path, size=120, layout_engine=ImageFont.Layout.RAQM)
         draw.text((W / 2, top + 15), quote_icon, font=quote_font, fill=(255, 255, 255, 180), anchor="ma")
 
-        # 7. Draw Wrapped Text Lines with 3D shadows
+        # 7. Draw Wrapped Text Lines natively in Pillow using Raqm complex shaper
         current_y = top + padding_y + 80
-        for fg_img, bg_img in line_layers:
-            line_x = (W - fg_img.width) // 2
+        for i, line in enumerate(wrapped_lines):
             shadow_offset = 4
-            
-            # Shadow
-            shadow_alpha = Image.new("L", bg_img.size, 160)
-            img.paste(bg_img, (line_x + shadow_offset, int(current_y) + shadow_offset), shadow_alpha)
-            # Foreground text
-            img.paste(fg_img, (line_x, int(current_y)), fg_img)
-            
-            current_y += int(fg_img.height * 1.35) + line_spacing
+            # Draw shadow
+            draw.text((W / 2 + shadow_offset, current_y + shadow_offset), line, font=font, fill=(0, 0, 0, 180), anchor="ma")
+            # Draw main text
+            draw.text((W / 2, current_y), line, font=font, fill="white", anchor="ma")
+            current_y += int(line_heights[i] * 1.35) + line_spacing
 
-        # 8. DRAW AUTHOR NAME OR MINIMAL LINE (Only if a real author is parsed)
+        # 8. Draw Author Name or line divider (Only if a real author is parsed)
         if author_name:
             line_y = current_y + 10
             draw.line([W/2 - 120, line_y, W/2 + 120, line_y], fill=(255, 255, 255, 100), width=3)
