@@ -5,17 +5,43 @@ import requests
 from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime
 
-# Pre-filled directly from your Google Sheet screenshot
+# Pre-filled directly from your Google Sheet ID
 GOOGLE_SHEET_ID = "1rmyyD1lS3uAZ4c9WAkmTekDrrcx4X3jdvpJz8DWyhX0"
 
-# Target ONLY the "New Quotes" sheet tab by name, ignoring "Old Quotes"
-CSV_URL = f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/gviz/tq?tqx=out:csv&sheet=New%20Quotes"
+# Target ONLY the first tab ("New Quotes") using gid=0
+CSV_URL = f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/export?format=csv&gid=0"
 
 # Google Font URLs for your requested styles
 FONT_URLS = {
     "Anek Kannada": "https://github.com/google/fonts/raw/main/ofl/anekkannada/AnekKannada%5Bwdth,wght%5D.ttf",
     "Hubballi": "https://github.com/google/fonts/raw/main/ofl/hubballi/Hubballi-Regular.ttf"
 }
+
+def wrap_text(text, font, max_width):
+    """
+    Splits a single long string into multiple lines based on font size 
+    and maximum pixel width limits.
+    """
+    words = text.split(' ')
+    lines = []
+    current_line = []
+    
+    for word in words:
+        test_line = ' '.join(current_line + [word])
+        bbox = font.getbbox(test_line)
+        width = bbox[2] - bbox[0]
+        
+        if width <= max_width:
+            current_line.append(word)
+        else:
+            if current_line:
+                lines.append(' '.join(current_line))
+            current_line = [word]
+            
+    if current_line:
+        lines.append(' '.join(current_line))
+        
+    return lines
 
 def fetch_quotes_from_sheets():
     quotes = []
@@ -24,16 +50,24 @@ def fetch_quotes_from_sheets():
         response = requests.get(CSV_URL, timeout=15)
         if response.status_code == 200:
             lines = response.content.decode('utf-8').splitlines()
-            reader = csv.DictReader(lines)
+            reader = csv.reader(lines)
             for row in reader:
-                # Read and validate populated columns
-                if row.get("date") and row.get("category") and row.get("text") and row.get("prompt"):
-                    quotes.append({
-                        "date": row["date"].strip().replace('"', ''),
-                        "category": row["category"].strip().lower().replace('"', ''),
-                        "text": row["text"].strip().replace('"', ''),
-                        "prompt": row["prompt"].strip().replace('"', '')
-                    })
+                if len(row) >= 4:
+                    date_val = row[0].strip()
+                    category_val = row[1].strip().lower()
+                    text_val = row[2].strip()
+                    prompt_val = row[3].strip()
+                    
+                    if date_val.lower() == "date" or category_val == "category":
+                        continue
+                        
+                    if date_val and category_val and text_val and prompt_val:
+                        quotes.append({
+                            "date": date_val,
+                            "category": category_val,
+                            "text": text_val,
+                            "prompt": prompt_val
+                        })
         else:
             print(f"Error: Google Sheets responded with status code {response.status_code}")
     except Exception as e:
@@ -46,16 +80,13 @@ def main():
         print("Error: No valid quotes loaded from your Google Sheet.")
         return
 
-    # Check for quotes scheduled for today (YYYY-MM-DD)
     today_str = datetime.now().strftime("%Y-%m-%d")
     today_quotes = [q for q in quotes if q["date"] == today_str]
 
     if today_quotes:
-        # Select one random quote from today's batch to generate
         today_quote = random.choice(today_quotes)
         print(f"Found quote matching today's date ({today_str}).")
     else:
-        # Fallback: If no quote is scheduled for today, select a random row so the test run succeeds
         print(f"No quotes scheduled specifically for today ({today_str}). Selecting a random fallback quote.")
         today_quote = random.choice(quotes)
 
@@ -76,7 +107,7 @@ def main():
     img = Image.open("temp_bg.jpg")
     W, H = img.size
 
-    # 3. Download and apply font style (Randomly chooses between Anek Kannada and Hubballi)
+    # 3. Download and apply font style (Anek Kannada or Hubballi)
     font_name, font_download_url = random.choice(list(FONT_URLS.items()))
     print(f"Downloading and applying typography style: {font_name}")
     
@@ -84,31 +115,57 @@ def main():
     with open("selected_font.ttf", "wb") as f:
         f.write(font_response.content)
     
-    font = ImageFont.truetype("selected_font.ttf", size=44)
+    font = ImageFont.truetype("selected_font.ttf", size=42)
 
-    # 4. Draw rounded dark background card for perfect text readability
-    overlay = Image.new('RGBA', img.size, (0, 0, 0, 0))
-    overlay_draw = ImageDraw.Draw(overlay)
+    # 4. Perform Word Wrapping
+    max_text_width = 750  
+    wrapped_lines = wrap_text(text, font, max_text_width)
+
+    # 5. Calculate Dynamic Card Height
+    line_spacing = 15
+    total_text_height = 0
+    line_heights = []
     
-    card_w, card_h = 800, 200
+    for line in wrapped_lines:
+        bbox = font.getbbox(line)
+        line_h = bbox[3] - bbox[1]
+        line_heights.append(line_h)
+        total_text_height += line_h
+    
+    total_text_height += line_spacing * (len(wrapped_lines) - 1)
+
+    # Calculate card dimensions with vertical padding
+    padding_y = 45
+    card_w = 850
+    card_h = total_text_height + (padding_y * 2)
+
+    # Define card boundary rectangles
     left = (W - card_w) / 2
     top = (H - card_h) / 2
     right = left + card_w
     bottom = top + card_h
+
+    # Draw rounded transparent card
+    overlay = Image.new('RGBA', img.size, (0, 0, 0, 0))
+    overlay_draw = ImageDraw.Draw(overlay)
     overlay_draw.rounded_rectangle([left, top, right, bottom], radius=20, fill=(0, 0, 0, 140))
     
     img = Image.alpha_composite(img.convert('RGBA'), overlay)
     draw = ImageDraw.Draw(img)
 
-    # 5. Draw the Kannada Text centered precisely inside the card
-    draw.text((W / 2, H / 2), text, font=font, fill="white", anchor="mm")
+    # 6. Draw the Wrapped Text Lines (Centered precisely)
+    current_y = top + padding_y
+    for i, line in enumerate(wrapped_lines):
+        # Draw horizontally centered (Pillow automatically uses HarfBuzz if libraqm is installed on the system)
+        draw.text((W / 2, current_y), line, font=font, fill="white", anchor="ma")
+        current_y += line_heights[i] + line_spacing
 
-    # 6. Draw the Kannada Watermark "ಸಾಹಿತ್ಯ ಕೀಬೋರ್ಡ್‌" in the bottom-right corner
+    # 7. Draw the Kannada Watermark "ಸಾಹಿತ್ಯ ಕೀಬೋರ್ಡ್‌" in the bottom-right corner
     watermark_text = "ಸಾಹಿತ್ಯ ಕೀಬೋರ್ಡ್‌"
     watermark_font = ImageFont.truetype("selected_font.ttf", size=24)
     draw.text((W - 40, H - 40), watermark_text, font=watermark_font, fill=(255, 255, 255, 180), anchor="rd")
 
-    # 7. Save the final high-definition PNG to the correct category folder
+    # 8. Save the final high-definition PNG to the correct category folder
     output_dir = f"images/{category}"
     os.makedirs(output_dir, exist_ok=True)
     
