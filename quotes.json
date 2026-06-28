@@ -9,6 +9,30 @@
   },
   {
     "category": "daily_special",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/daily_special/quote_20260629_1.png"
+  },
+  {
+    "category": "daily_special",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/daily_special/quote_20260629_2.png"
+  },
+  {
+    "category": "daily_special",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/daily_special/quote_20260629_3.png"
+  },
+  {
+    "category": "daily_special",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/daily_special/quote_20260629_4.png"
+  },
+  {
+    "category": "daily_special",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/daily_special/quote_20260629_5.png"
+  },
+  {
+    "category": "daily_special",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/daily_special/quote_20260629_6.png"
+  },
+  {
+    "category": "daily_special",
     "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/daily_special/treeday.jpg"
   },
   {
@@ -20,11 +44,107 @@
     "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/inspirational/quote_20260628.png"
   },
   {
+    "category": "inspirational",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/inspirational/quote_20260629_13.png"
+  },
+  {
+    "category": "inspirational",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/inspirational/quote_20260629_14.png"
+  },
+  {
+    "category": "inspirational",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/inspirational/quote_20260629_15.png"
+  },
+  {
+    "category": "inspirational",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/inspirational/quote_20260629_16.png"
+  },
+  {
+    "category": "inspirational",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/inspirational/quote_20260629_17.png"
+  },
+  {
+    "category": "inspirational",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/inspirational/quote_20260629_18.png"
+  },
+  {
+    "category": "life",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/life/quote_20260629_19.png"
+  },
+  {
+    "category": "life",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/life/quote_20260629_20.png"
+  },
+  {
+    "category": "life",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/life/quote_20260629_21.png"
+  },
+  {
+    "category": "life",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/life/quote_20260629_22.png"
+  },
+  {
+    "category": "life",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/life/quote_20260629_23.png"
+  },
+  {
+    "category": "life",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/life/quote_20260629_24.png"
+  },
+  {
+    "category": "love",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/love/quote_20260629_25.png"
+  },
+  {
+    "category": "love",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/love/quote_20260629_26.png"
+  },
+  {
+    "category": "love",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/love/quote_20260629_27.png"
+  },
+  {
+    "category": "love",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/love/quote_20260629_28.png"
+  },
+  {
+    "category": "love",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/love/quote_20260629_29.png"
+  },
+  {
+    "category": "love",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/love/quote_20260629_30.png"
+  },
+  {
     "category": "motivational",
     "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/motivational/2a546d138d5fc319b3bf664a11ec819b.jpg"
   },
   {
     "category": "motivational",
     "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/motivational/motivationtest.jpg"
+  },
+  {
+    "category": "motivational",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/motivational/quote_20260629_10.png"
+  },
+  {
+    "category": "motivational",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/motivational/quote_20260629_11.png"
+  },
+  {
+    "category": "motivational",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/motivational/quote_20260629_12.png"
+  },
+  {
+    "category": "motivational",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/motivational/quote_20260629_7.png"
+  },
+  {
+    "category": "motivational",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/motivational/quote_20260629_8.png"
+  },
+  {
+    "category": "motivational",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/motivational/quote_20260629_9.png"
   }
 ]
