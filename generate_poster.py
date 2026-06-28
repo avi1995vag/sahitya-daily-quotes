@@ -5,6 +5,9 @@ import requests
 from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime
 
+# SAFEGUARD: Forces Pygame to run headlessly (no physical monitor or screen needed on the server)
+os.environ["SDL_VIDEODRIVER"] = "dummy"
+
 # Initialize Pygame's hardware-accelerated Font System
 import pygame
 pygame.font.init()
@@ -12,6 +15,7 @@ pygame.font.init()
 # Pre-filled directly from your Google Sheet ID
 GOOGLE_SHEET_ID = "1rmyyD1lS3uAZ4c9WAkmTekDrrcx4X3jdvpJz8DWyhX0"
 CSV_URL = f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/export?format=csv&gid=0"
+# (The rest of your generate_poster.py code remains exactly the same...)
 
 FONT_URLS = {
     "Anek Kannada": "https://github.com/google/fonts/raw/main/ofl/anekkannada/AnekKannada%5Bwdth,wght%5D.ttf",
