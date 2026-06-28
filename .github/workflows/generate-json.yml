@@ -3,7 +3,8 @@ name: Generate Quotes JSON
 on:
   push:
     paths:
-      - 'images/**' # Runs automatically whenever you upload files to any images subfolder
+      - 'images/**'
+  workflow_dispatch: # Adds a manual "Run" button inside your GitHub Actions tab
 
 permissions:
   contents: write
@@ -30,7 +31,6 @@ jobs:
             if (fs.existsSync(dir)) {
               const files = fs.readdirSync(dir);
               files.forEach(file => {
-                // Ignore placeholder text files and only register valid images
                 if (file !== "keep.txt" && (file.endsWith(".png") || file.endsWith(".jpg") || file.endsWith(".jpeg"))) {
                   output.push({
                     category: category,
