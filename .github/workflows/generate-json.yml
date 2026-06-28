@@ -34,7 +34,7 @@ jobs:
           pip uninstall -y pillow
           pip install --no-binary :all: pillow
 
-      # Generates 30 beautiful posters with zero formatting errors
+      # Generates 36 beautiful posters with zero formatting errors
       - name: Run AI Poster Generator
         run: python generate_poster.py
 
