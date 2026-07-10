@@ -14,19 +14,17 @@ from datetime import datetime
 GOOGLE_SHEET_ID = "1rmyyD1lS3uAZ4c9WAkmTekDrrcx4X3jdvpJz8DWyhX0"
 CSV_URL = f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/export?format=csv&gid=0"
 
-# NOTE: Prefer setting this as an environment variable (PEXELS_API_KEY)
-# instead of hardcoding it, especially if this file goes into a git repo.
-PEXELS_API_KEY = os.environ.get(
-    "PEXELS_API_KEY",
-    "We2njvb6rYtUvXMH2fuU6IjHgSjOlpsUVFRCSibahkalqXN3m7v7eriF"
-)
-
 FONT_URLS = {
     "Anek Kannada": "https://github.com/google/fonts/raw/main/ofl/anekkannada/AnekKannada%5Bwdth,wght%5D.ttf",
     "Hubballi": "https://github.com/google/fonts/raw/main/ofl/hubballi/Hubballi-Regular.ttf"
 }
 
 W, H = 1080, 1080
+
+# Used by the "notes card" template's footer bar (like the reference screenshot).
+# Fill these in with your own branding — leave CONTACT_NUMBER empty to hide it.
+BRAND_NAME = "VIJAY KARNATAKA"
+CONTACT_NUMBER = ""
 
 # ============================================================
 # CURATED PREMIUM PALETTES
@@ -69,81 +67,9 @@ PALETTES = [
 ]
 
 
-def generate_textured_gradient(palette, W, H):
-    """Diagonal gradient + soft vignette + fine grain for a premium, non-flat background."""
-    bg1, bg2 = palette["bg1"], palette["bg2"]
-    base = Image.new('RGB', (W, H), bg1)
-    top_layer = Image.new('RGB', (W, H), bg2)
-    mask = Image.new('L', (W, H))
-    mpix = mask.load()
-
-    # Diagonal gradient (more dynamic than a flat top-to-bottom fade)
-    for y in range(H):
-        for x in range(0, W, 4):  # step 4 for speed, upscale-safe since it's a smooth gradient
-            t = ((x / W) * 0.5 + (y / H) * 0.5)
-            val = int(max(0, min(255, t * 255)))
-            for dx in range(4):
-                if x + dx < W:
-                    mpix[x + dx, y] = val
-
-    img = Image.composite(top_layer, base, mask).convert('RGB')
-
-    # Soft vignette (darken corners slightly for focus)
-    vignette = Image.new('L', (W, H), 0)
-    vdraw = ImageDraw.Draw(vignette)
-    vdraw.ellipse([-W * 0.3, -H * 0.3, W * 1.3, H * 1.3], fill=80)
-    vignette = vignette.filter(ImageFilter.GaussianBlur(180))
-    dark = Image.new('RGB', (W, H), (0, 0, 0))
-    img = Image.composite(img, dark, vignette)
-
-    # Fine grain for a textured, non-plastic look
-    noise = Image.effect_noise((W, H), 18).convert('L')
-    noise_rgb = Image.merge('RGB', (noise, noise, noise))
-    img = Image.blend(img, noise_rgb, 0.03)
-
-    return img
-
-
-def fetch_pexels_background(prompt, palette_name, W, H):
-    """Fetches a moody stock photo matching the prompt + chosen palette mood."""
-    if not PEXELS_API_KEY or PEXELS_API_KEY == "YOUR_PEXELS_API_KEY_HERE":
-        return None
-
-    headers = {"Authorization": PEXELS_API_KEY}
-    mood_map = {
-        "Midnight Ocean": "dark blue ocean abstract",
-        "Royal Plum": "purple abstract dark texture",
-        "Emerald Noir": "dark green forest abstract",
-        "Sunset Ember": "orange abstract dark texture",
-        "Charcoal Gold": "gold bokeh dark abstract",
-        "Deep Indigo": "indigo abstract dark texture",
-    }
-    search_query = mood_map.get(palette_name, "dark minimalist abstract")
-    if "special" in prompt.lower() or "festive" in prompt.lower():
-        search_query = "gold bokeh dark abstract"
-
-    url = f"https://api.pexels.com/v1/search?query={requests.utils.quote(search_query)}&per_page=15"
-
-    try:
-        response = requests.get(url, headers=headers, timeout=15)
-        if response.status_code == 200:
-            data = response.json()
-            photos = data.get("photos", [])
-            if photos:
-                photo = random.choice(photos)
-                img_url = photo["src"].get("large2x") or photo["src"].get("original")
-                if img_url:
-                    print(f"Downloading Pexels Stock Background: {img_url}")
-                    img_response = requests.get(img_url, timeout=30)
-                    with open("temp_bg.jpg", "wb") as f:
-                        f.write(img_response.content)
-                    photo_img = Image.open("temp_bg.jpg").resize((W, H)).convert('RGB')
-                    # Darken so text stays readable regardless of the photo
-                    darken = Image.new('RGB', (W, H), (0, 0, 0))
-                    return Image.blend(photo_img, darken, 0.45)
-    except Exception as e:
-        print(f"Failed to fetch Pexels background: {e}")
-    return None
+def generate_solid_background(palette, W, H):
+    """Flat, clean solid-color background — no photo, no gradient, no texture."""
+    return Image.new('RGB', (W, H), palette["bg2"])
 
 
 def wrap_text(text, font, max_width):
@@ -220,10 +146,10 @@ def parse_author(raw_text):
 
 def pick_font_size(text_length):
     if text_length < 35:
-        return 85
+        return 118
     elif text_length < 75:
-        return 65
-    return 52
+        return 92
+    return 72
 
 
 def apply_logo(img):
@@ -247,7 +173,7 @@ def apply_logo(img):
 # Each takes (img, quote_body, author_name, font_path, palette) and returns final RGB image
 # ============================================================
 
-def template_centered_card(img, quote_body, author_name, font_path, palette):
+def template_centered_card(img, quote_body, author_name, font_path, palette, quote_date=None):
     """Classic frosted glass card, centered, kinetic staggered lines."""
     accent = palette["accent"]
     accent_soft = palette["accent_soft"]
@@ -318,7 +244,7 @@ def template_centered_card(img, quote_body, author_name, font_path, palette):
     return img.convert('RGB')
 
 
-def template_side_accent(img, quote_body, author_name, font_path, palette):
+def template_side_accent(img, quote_body, author_name, font_path, palette, quote_date=None):
     """Bold left-aligned quote with a vertical accent bar. Editorial / punchy feel."""
     accent = palette["accent"]
 
@@ -365,12 +291,12 @@ def template_side_accent(img, quote_body, author_name, font_path, palette):
     return img.convert('RGB')
 
 
-def template_minimal_bold(img, quote_body, author_name, font_path, palette):
+def template_minimal_bold(img, quote_body, author_name, font_path, palette, quote_date=None):
     """Full-bleed, no card — huge centered type directly on the textured background."""
     accent = palette["accent"]
 
     text_length = len(quote_body)
-    font_size = 92 if text_length < 40 else (72 if text_length < 80 else 58)
+    font_size = 104 if text_length < 40 else (84 if text_length < 80 else 66)
     font = ImageFont.truetype(font_path, size=font_size, layout_engine=ImageFont.Layout.RAQM)
     max_text_width = 900
     wrapped_lines = wrap_text(quote_body, font, max_text_width)
@@ -407,7 +333,7 @@ def template_minimal_bold(img, quote_body, author_name, font_path, palette):
     return img.convert('RGB')
 
 
-def template_split_band(img, quote_body, author_name, font_path, palette):
+def template_split_band(img, quote_body, author_name, font_path, palette, quote_date=None):
     """Solid accent-colored band at top, quote text below on the textured background."""
     accent = palette["accent"]
     bg1 = palette["bg1"]
@@ -452,7 +378,149 @@ def template_split_band(img, quote_body, author_name, font_path, palette):
     return img.convert('RGB')
 
 
-TEMPLATES = [template_centered_card, template_side_accent, template_minimal_bold, template_split_band]
+def template_notes_card(img, quote_body, author_name, font_path, palette, quote_date=None):
+    """Light 'notes app' style card — big bold dark text, header bar, date, footer brand strip.
+    Inspired by the iOS-notes-style reference screenshot."""
+    accent = palette["accent"]
+
+    font_size = pick_font_size(len(quote_body)) - 6  # dark-on-light reads bigger, so trim slightly
+    font = ImageFont.truetype(font_path, size=font_size, layout_engine=ImageFont.Layout.RAQM)
+    max_text_width = 800
+    wrapped_lines = wrap_text(quote_body, font, max_text_width)
+
+    line_spacing = 16
+    line_heights = []
+    total_h = 0
+    for line in wrapped_lines:
+        bbox = font.getbbox(line)
+        lh = bbox[3] - bbox[1]
+        line_heights.append(lh)
+        total_h += int(lh * 1.28)
+    total_h += line_spacing * (len(wrapped_lines) - 1)
+
+    header_h = 130
+    date_h = 65
+    footer_h = 95
+    author_h = 70 if author_name else 20
+    padding_y = 40
+    card_w = 940
+    card_h = header_h + date_h + total_h + author_h + footer_h + padding_y
+
+    left = (W - card_w) / 2
+    top = (H - card_h) / 2
+    right = left + card_w
+    bottom = top + card_h
+
+    img = img.convert('RGBA')
+
+    # Drop shadow
+    shadow = Image.new('RGBA', img.size, (0, 0, 0, 0))
+    sdraw = ImageDraw.Draw(shadow)
+    sdraw.rounded_rectangle([left, top + 16, right, bottom + 16], radius=32, fill=(0, 0, 0, 140))
+    shadow = shadow.filter(ImageFilter.GaussianBlur(24))
+    img = Image.alpha_composite(img, shadow)
+
+    # Off-white card body
+    card = Image.new('RGBA', (int(card_w), int(card_h)), (250, 248, 244, 255))
+    mask = Image.new('L', card.size, 0)
+    ImageDraw.Draw(mask).rounded_rectangle([0, 0, card.width, card.height], radius=32, fill=255)
+    img.paste(card, (int(left), int(top)), mask)
+
+    draw = ImageDraw.Draw(img)
+
+    # Header: back arrow, "QUOTE OF THE DAY", "•••" menu dots
+    header_font = ImageFont.truetype(font_path, size=32, layout_engine=ImageFont.Layout.RAQM)
+    arrow_font = ImageFont.truetype(font_path, size=42, layout_engine=ImageFont.Layout.RAQM)
+    draw.text((left + 40, top + 60), "\u2039", font=arrow_font, fill=accent, anchor="lm")
+    draw.text((left + 80, top + 60), "QUOTE OF THE DAY", font=header_font, fill=accent, anchor="lm")
+    draw.text((right - 40, top + 60), "\u2022\u2022\u2022", font=header_font, fill=(150, 145, 138), anchor="rm")
+    draw.line([left + 30, top + header_h, right - 30, top + header_h], fill=(222, 217, 207), width=2)
+
+    # Date
+    if quote_date:
+        date_font = ImageFont.truetype(font_path, size=28, layout_engine=ImageFont.Layout.RAQM)
+        draw.text((W / 2, top + header_h + date_h / 2), quote_date, font=date_font, fill=(160, 155, 145), anchor="mm")
+
+    # Big bold dark quote text, left-aligned like a real note
+    current_y = top + header_h + date_h + 15
+    for i, line in enumerate(wrapped_lines):
+        draw.text((left + 50, current_y), line, font=font, fill=(28, 26, 24), anchor="la")
+        current_y += int(line_heights[i] * 1.28) + line_spacing
+
+    if author_name:
+        author_font = ImageFont.truetype(font_path, size=34, layout_engine=ImageFont.Layout.RAQM)
+        draw.text((left + 50, current_y + 18), f"[{author_name}]", font=author_font, fill=(120, 114, 106), anchor="la")
+
+    # Footer brand strip
+    footer_top = bottom - footer_h
+    draw.line([left + 30, footer_top, right - 30, footer_top], fill=(222, 217, 207), width=2)
+    brand_font = ImageFont.truetype(font_path, size=32, layout_engine=ImageFont.Layout.RAQM)
+    draw.text((left + 50, bottom - footer_h / 2), BRAND_NAME, font=brand_font, fill=accent, anchor="lm")
+    if CONTACT_NUMBER:
+        draw.text((right - 50, bottom - footer_h / 2), CONTACT_NUMBER, font=brand_font, fill=(120, 114, 106), anchor="rm")
+
+    return img.convert('RGB')
+
+
+def template_bold_impact(img, quote_body, author_name, font_path, palette, quote_date=None):
+    """Huge stacked outlined type with heavy drop shadow — poster/banner energy,
+    inspired by the festive banner reference image."""
+    accent = palette["accent"]
+    accent_soft = palette["accent_soft"]
+
+    text_length = len(quote_body)
+    font_size = 128 if text_length < 40 else (98 if text_length < 80 else 74)
+    font = ImageFont.truetype(font_path, size=font_size, layout_engine=ImageFont.Layout.RAQM)
+    max_text_width = 960
+    wrapped_lines = wrap_text(quote_body, font, max_text_width)
+
+    line_spacing = 12
+    line_heights = []
+    total_h = 0
+    for line in wrapped_lines:
+        bbox = font.getbbox(line)
+        lh = bbox[3] - bbox[1]
+        line_heights.append(lh)
+        total_h += int(lh * 1.22)
+    total_h += line_spacing * (len(wrapped_lines) - 1)
+
+    img = img.convert('RGBA')
+    draw = ImageDraw.Draw(img)
+
+    current_y = (H - total_h) / 2 - 30
+    outline_w = 4
+    for i, line in enumerate(wrapped_lines):
+        color = (255, 255, 255) if i % 2 == 0 else accent_soft
+
+        # Hard outline by stamping the text offset in a ring around the target position
+        for ox in (-outline_w, 0, outline_w):
+            for oy in (-outline_w, 0, outline_w):
+                if ox == 0 and oy == 0:
+                    continue
+                draw.text((W / 2 + ox, current_y + oy), line, font=font, fill=(0, 0, 0, 210), anchor="ma")
+
+        # Heavy drop shadow for a punchy, poster-like feel
+        draw.text((W / 2 + 7, current_y + 7), line, font=font, fill=(0, 0, 0, 140), anchor="ma")
+        draw.text((W / 2, current_y), line, font=font, fill=color, anchor="ma")
+        current_y += int(line_heights[i] * 1.22) + line_spacing
+
+    if author_name:
+        line_y = current_y + 35
+        draw.line([W / 2 - 95, line_y, W / 2 + 95, line_y], fill=(*accent, 230), width=5)
+        tag_font = ImageFont.truetype(font_path, size=48, layout_engine=ImageFont.Layout.RAQM)
+        draw.text((W / 2, line_y + 22), author_name.upper(), font=tag_font, fill=(*accent, 245), anchor="ma")
+
+    return img.convert('RGB')
+
+
+TEMPLATES = [
+    template_centered_card,
+    template_side_accent,
+    template_minimal_bold,
+    template_split_band,
+    template_notes_card,
+    template_bold_impact,
+]
 
 
 def main():
@@ -484,16 +552,14 @@ def main():
         print(f"[{idx + 1}/{len(quotes)}] Generating: '{quote_body[:25]}...'")
 
         palette = random.choice(PALETTES)
-
-        img = fetch_pexels_background(bg_prompt, palette["name"], W, H)
-        if img is None:
-            img = generate_textured_gradient(palette, W, H)
+        img = generate_solid_background(palette, W, H)
 
         font_name = random.choice(list(FONT_URLS.keys()))
         font_path = font_files[font_name]
 
         template_fn = random.choice(TEMPLATES)
-        img = template_fn(img, quote_body, author_name, font_path, palette)
+        today_display_date = datetime.now().strftime("%B %d, %Y")  # e.g. "July 10, 2026"
+        img = template_fn(img, quote_body, author_name, font_path, palette, quote_date=today_display_date)
 
         apply_logo(img)
 
