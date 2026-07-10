@@ -23,7 +23,7 @@ W, H = 1080, 1080
 
 # Used by the "notes card" template's footer bar (like the reference screenshot).
 # Fill these in with your own branding — leave CONTACT_NUMBER empty to hide it.
-BRAND_NAME = "VIJAY KARNATAKA"
+BRAND_NAME = "Sahitya Keyboard"
 CONTACT_NUMBER = ""
 
 # ============================================================
