@@ -6,7 +6,7 @@ import requests
 import hashlib
 from PIL import Image, ImageDraw, ImageFont
 
-# Check if CairoSVG is available for vector icon rendering
+# Optional CairoSVG import (falls back smoothly to direct PNG icons if absent)
 CAIROSVG_AVAILABLE = False
 try:
     import cairosvg
@@ -26,33 +26,60 @@ W, H = 1080, 1080
 
 # 6 THEME BACKGROUND COLORS (Mapped to categories)
 THEME_COLORS = {
-    "daily": (0, 151, 156),          # 1. Teal
+    "daily_special": (0, 151, 156),   # 1. Teal
+    "daily": (0, 151, 156),
     "inspirational": (74, 21, 75),   # 2. Deep Royal Purple
-    "motivation": (74, 21, 75),      #    (Alias for inspirational)
+    "motivational": (74, 21, 75),
     "wisdom": (27, 59, 111),         # 3. Midnight Royal Blue
-    "knowledge": (27, 59, 111),      #    (Alias for wisdom)
+    "author_quote": (27, 59, 111),
     "success": (175, 100, 20),       # 4. Warm Golden Amber
     "love": (165, 32, 64),           # 5. Crimson Rose
-    "relationship": (165, 32, 64),   #    (Alias for love)
     "life": (38, 85, 70),            # 6. Deep Emerald Green
 }
 
-DEFAULT_BG_COLOR = (0, 151, 156)    # Default fallback color
+DEFAULT_BG_COLOR = (0, 151, 156)
 
 # Text & Accent Colors
 COLOR_TEXT = (255, 255, 255)        # White main quote text
 COLOR_QUOTE_MARK = (245, 226, 0)    # Yellow quote marks
 COLOR_AUTHOR = (240, 232, 210)      # Soft Gold / Cream for Author
-COLOR_ICON = (255, 255, 255)        # White for top flat icon
 COLOR_BRAND = (255, 255, 255)       # White branding at bottom
 
 # Branding Text
 BRAND_NAME = "Sahitya Keyboard"
 
-# Fonts Requested
+# Fonts
 FONT_URLS = {
     "Anek_Kannada": "https://github.com/google/fonts/raw/main/ofl/anekkannada/AnekKannada%5Bwdth,wght%5D.ttf",
     "Hubballi": "https://github.com/google/fonts/raw/main/ofl/hubballi/Hubballi-Regular.ttf"
+}
+
+# Icon mapping for instant CDN matching
+KEYWORD_ICON_MAP = {
+    "bicycle": "bicycle",
+    "bike": "bicycle",
+    "heart": "heart",
+    "love": "heart",
+    "book": "book",
+    "knowledge": "book",
+    "light": "light-bulb",
+    "idea": "light-bulb",
+    "star": "star",
+    "magic": "sparkles",
+    "sparkle": "sparkles",
+    "target": "goal",
+    "trophy": "trophy",
+    "success": "trophy",
+    "smile": "happy",
+    "time": "time",
+    "clock": "time",
+    "inspirational": "sparkles",
+    "motivational": "flex-biceps",
+    "wisdom": "brain",
+    "life": "compass",
+    "daily_special": "calendar",
+    "daily": "calendar",
+    "author_quote": "quote-left"
 }
 
 # ============================================================
@@ -137,21 +164,14 @@ def wrap_text(text, font, max_width):
     return lines
 
 # ============================================================
-# DYNAMIC FLATICON ENGINE
+# GUARANTEED FLATICON ENGINE
 # ============================================================
 
 def extract_keyword_from_quote(quote_body, category):
-    """Extracts topic keywords from quote text or category."""
+    """Extracts topic keyword from quote text or category."""
     text_lower = quote_body.lower()
     
-    topic_keywords = [
-        "bicycle", "bike", "heart", "love", "book", "light", "idea", "mind",
-        "star", "fire", "sun", "moon", "tree", "flower", "music", "time", 
-        "clock", "target", "trophy", "road", "smile", "feather", "key", 
-        "compass", "anchor", "shield", "crown", "mountain", "hand"
-    ]
-    
-    for kw in topic_keywords:
+    for kw in KEYWORD_ICON_MAP.keys():
         if kw in text_lower:
             return kw
             
@@ -161,32 +181,41 @@ def extract_keyword_from_quote(quote_body, category):
     return "quote"
 
 def fetch_quote_relevant_icon(keyword):
-    """Searches open vector library for matching flat icons."""
+    """Fetches white flat PNG icon with multi-cdn fallbacks."""
+    icon_name = KEYWORD_ICON_MAP.get(keyword.lower(), "quote-left")
+    
+    # 1. Primary: Direct CDN PNG (Fast, 0 C-library dependencies)
+    cdn_url = f"https://img.icons8.com/ios-filled/120/FFFFFF/{icon_name}.png"
     try:
-        search_url = f"https://api.iconify.design/search?query={keyword}&limit=5"
-        res = requests.get(search_url, timeout=8)
-        
-        icon_name = None
-        if res.status_code == 200:
-            data = res.json()
-            if data.get("icons"):
-                icon_name = data["icons"][0]
-        
-        if not icon_name:
-            icon_name = "uil:comment-quotes"
-            
-        # Download icon SVG colored White (#FFFFFF)
-        svg_url = f"https://api.iconify.design/{icon_name}.svg?color=%23FFFFFF&width=256&height=256"
-        svg_res = requests.get(svg_url, timeout=8)
-        
-        if svg_res.status_code == 200:
-            svg_data = svg_res.content
-            if CAIROSVG_AVAILABLE:
-                png_bytes = cairosvg.svg2png(bytestring=svg_data, output_width=120, output_height=120)
+        res = requests.get(cdn_url, timeout=6)
+        if res.status_code == 200 and len(res.content) > 200:
+            return Image.open(io.BytesIO(res.content)).convert("RGBA")
+    except Exception as e:
+        print(f"CDN icon fetch failed for '{keyword}': {e}")
+
+    # 2. Secondary: Iconify API Vector rendering
+    try:
+        search_url = f"https://api.iconify.design/search?query={keyword}&limit=3"
+        res = requests.get(search_url, timeout=6)
+        if res.status_code == 200 and res.json().get("icons"):
+            iconify_name = res.json()["icons"][0]
+            svg_url = f"https://api.iconify.design/{iconify_name}.svg?color=%23FFFFFF&width=120&height=120"
+            svg_res = requests.get(svg_url, timeout=6)
+            if svg_res.status_code == 200 and CAIROSVG_AVAILABLE:
+                png_bytes = cairosvg.svg2png(bytestring=svg_res.content, output_width=120, output_height=120)
                 return Image.open(io.BytesIO(png_bytes)).convert("RGBA")
     except Exception as e:
-        print(f"Icon error for '{keyword}': {e}")
-        
+        print(f"Iconify fetch failed for '{keyword}': {e}")
+
+    # 3. Fallback: Default White Quote Icon
+    try:
+        fallback_url = "https://img.icons8.com/ios-filled/120/FFFFFF/quote-left.png"
+        res = requests.get(fallback_url, timeout=6)
+        if res.status_code == 200:
+            return Image.open(io.BytesIO(res.content)).convert("RGBA")
+    except Exception as e:
+        print(f"Fallback icon failed: {e}")
+
     return None
 
 # ============================================================
@@ -194,12 +223,12 @@ def fetch_quote_relevant_icon(keyword):
 # ============================================================
 
 def render_poster(quote_body, author_name, category, main_font_path, brand_font_path):
-    # 1. Select Background Color Theme based on Category
+    # 1. Select Background Theme
     bg_color = THEME_COLORS.get(category.lower(), DEFAULT_BG_COLOR)
     img = Image.new('RGBA', (W, H), bg_color)
     draw = ImageDraw.Draw(img)
 
-    # 2. Extract Keyword & Load Top Icon
+    # 2. Extract Keyword & Load Top Flat Icon
     keyword = extract_keyword_from_quote(quote_body, category)
     icon = fetch_quote_relevant_icon(keyword)
     
@@ -210,8 +239,6 @@ def render_poster(quote_body, author_name, category, main_font_path, brand_font_
 
     # 3. Typography & Text Wrapping
     font_size = 62 if len(quote_body) < 60 else (52 if len(quote_body) < 110 else 44)
-    
-    # Using Anek Kannada font for main text & quotes
     font = ImageFont.truetype(main_font_path, size=font_size, layout_engine=ImageFont.Layout.RAQM)
     quote_mark_font = ImageFont.truetype(main_font_path, size=font_size + 14, layout_engine=ImageFont.Layout.RAQM)
 
@@ -244,7 +271,7 @@ def render_poster(quote_body, author_name, category, main_font_path, brand_font_
             q_w = q_bbox[2] - q_bbox[0]
             draw.text((line_x - q_w - 4, current_y - 8), open_quote, font=quote_mark_font, fill=COLOR_QUOTE_MARK, anchor="la")
 
-        # Main quote text in White
+        # Main text in White
         draw.text((line_x, current_y), line, font=font, fill=COLOR_TEXT, anchor="la")
 
         # Yellow closing quote mark ”
@@ -254,12 +281,12 @@ def render_poster(quote_body, author_name, category, main_font_path, brand_font_
 
         current_y += int(line_heights[i] * 1.3) + line_spacing
 
-    # 5. Draw Author Name
+    # 5. Author Name
     if author_name:
         author_font = ImageFont.truetype(main_font_path, size=38, layout_engine=ImageFont.Layout.RAQM)
         draw.text((W / 2, current_y + 35), author_name.upper(), font=author_font, fill=COLOR_AUTHOR, anchor="ma")
 
-    # 6. Draw Footer Branding (Hubballi Font)
+    # 6. Footer Branding
     brand_font = ImageFont.truetype(brand_font_path, size=52, layout_engine=ImageFont.Layout.RAQM)
     draw.text((W / 2, H - 90), BRAND_NAME, font=brand_font, fill=COLOR_BRAND, anchor="mm")
 
@@ -279,7 +306,7 @@ def main():
 
     print(f"\nLoaded {len(quotes)} quotes. Generating posters...\n")
 
-    # Download requested fonts
+    # Download required fonts
     font_files = {}
     for name, url in FONT_URLS.items():
         filename = f"{name}.ttf"
