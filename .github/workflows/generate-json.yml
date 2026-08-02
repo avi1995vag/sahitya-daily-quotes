@@ -15,34 +15,45 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Installs Linux System Shapers
-      - name: Install Linux Text-Shaping Libraries (HarfBuzz & Raqm)
+      # Installs Linux System Shapers & Cairo for Flaticon rendering
+      - name: Install Linux Libraries (Cairo, HarfBuzz & Raqm)
         run: |
           sudo apt-get update
-          sudo apt-get install -y libraqm-dev libfribidi-dev libharfbuzz-dev libfreetype6-dev libjpeg-dev zlib1g-dev
+          sudo apt-get install -y libcairo2-dev libcairo2 libraqm-dev libfribidi-dev libharfbuzz-dev libfreetype6-dev libjpeg-dev zlib1g-dev
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      # Compiles Pillow from source with native Raqm enabled (No Pygame needed)
+      # Installs CairoSVG & compiles Pillow from source with native Raqm enabled
       - name: Install Dependencies & Compile Pillow from Source
         run: |
           python -m pip install --upgrade pip
-          pip install requests
+          pip install requests cairosvg
           pip uninstall -y pillow
           pip install --no-binary :all: pillow
 
-      # Generates 36 beautiful posters with zero formatting errors
+      # Generates posters with dynamic Flaticons & theme colors
       - name: Run AI Poster Generator
         run: python generate_poster.py
 
+      # Scans all theme directories and builds quotes.json
       - name: Generate Fresh JSON Database
         run: |
           node -e '
           const fs = require("fs");
-          const categories = ["daily_special", "inspirational", "life", "love", "motivational", "author_quote"];
+          const categories = [
+            "daily_special", 
+            "daily", 
+            "inspirational", 
+            "motivational", 
+            "life", 
+            "love", 
+            "wisdom", 
+            "success", 
+            "author_quote"
+          ];
           const output = [];
           const owner = "avi1995vag";
           const repo = "sahitya-daily-quotes";
