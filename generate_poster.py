@@ -160,7 +160,6 @@ def wrap_text(text, font, max_width):
 
 def extract_icon_query(quote_body, prompt):
     """Determines search query for finding a unique icon per quote."""
-    # 1. Check prompt column (Column D in Sheet)
     if prompt and prompt.strip() and prompt.strip().lower() not in ["prompt", "none"]:
         words = re.findall(r'[a-zA-Z]+', prompt.lower())
         ignore = {"a", "an", "the", "in", "on", "for", "with", "quote", "poster", "image", "hd"}
@@ -168,7 +167,6 @@ def extract_icon_query(quote_body, prompt):
         if clean:
             return clean[0]
 
-    # 2. Check for visual keywords inside quote text
     text_lower = quote_body.lower()
     for kw in VISUAL_KEYWORDS:
         if kw in text_lower:
@@ -178,8 +176,6 @@ def extract_icon_query(quote_body, prompt):
 
 def fetch_quote_relevant_icon(query, category):
     """Fetches unique icon for query, or falls back to folder default icon."""
-    
-    # Try 1: Unique Icon via Direct CDN
     if query:
         cdn_url = f"https://img.icons8.com/ios-filled/120/FFFFFF/{query}.png"
         try:
@@ -189,7 +185,6 @@ def fetch_quote_relevant_icon(query, category):
         except Exception:
             pass
 
-        # Try 1b: Unique Icon via Iconify API
         try:
             search_url = f"https://api.iconify.design/search?query={query}&limit=3"
             res = requests.get(search_url, timeout=5)
@@ -203,7 +198,6 @@ def fetch_quote_relevant_icon(query, category):
         except Exception:
             pass
 
-    # Try 2: Category / Folder Default Icon Fallback
     folder_icon = CATEGORY_DEFAULT_ICONS.get(category.lower(), "quote-left")
     cdn_url = f"https://img.icons8.com/ios-filled/120/FFFFFF/{folder_icon}.png"
     try:
@@ -213,7 +207,6 @@ def fetch_quote_relevant_icon(query, category):
     except Exception:
         pass
 
-    # Try 3: Standard Quote Mark Icon
     try:
         res = requests.get("https://img.icons8.com/ios-filled/120/FFFFFF/quote-left.png", timeout=5)
         if res.status_code == 200:
@@ -239,20 +232,22 @@ def render_poster(quote_body, author_name, category, prompt, main_font_path, bra
     
     if icon:
         icon_x = int((W - icon.width) / 2)
-        icon_y = 150
+        icon_y = 120  # Lifted icon slightly to give more vertical space for bigger text
         img.paste(icon, (icon_x, icon_y), icon)
 
-    # 3. Typography & Text Wrapping
-    font_size = 62 if len(quote_body) < 60 else (52 if len(quote_body) < 110 else 44)
+    # 3. Typography & Text Wrapping (INCREASED FONT SIZES)
+    # Short quotes: 78pt | Medium: 64pt | Long: 52pt
+    font_size = 78 if len(quote_body) < 60 else (64 if len(quote_body) < 110 else 52)
+    
     font = ImageFont.truetype(main_font_path, size=font_size, layout_engine=ImageFont.Layout.RAQM)
-    quote_mark_font = ImageFont.truetype(main_font_path, size=font_size + 14, layout_engine=ImageFont.Layout.RAQM)
+    quote_mark_font = ImageFont.truetype(main_font_path, size=font_size + 18, layout_engine=ImageFont.Layout.RAQM)
 
-    max_width = 820
+    max_width = 900  # Widened maximum line width to comfortably fit larger font sizes
     wrapped_lines = wrap_text(quote_body, font, max_width)
 
     line_heights = []
     total_text_h = 0
-    line_spacing = 18
+    line_spacing = 20
     for line in wrapped_lines:
         bbox = font.getbbox(line)
         lh = bbox[3] - bbox[1]
@@ -261,7 +256,7 @@ def render_poster(quote_body, author_name, category, prompt, main_font_path, bra
     total_text_h += line_spacing * (len(wrapped_lines) - 1)
 
     # 4. Draw Quote Text with Yellow Quote Marks “...”
-    start_y = 360 + (300 - total_text_h) / 2
+    start_y = 310 + (320 - total_text_h) / 2
     current_y = start_y
 
     for i, line in enumerate(wrapped_lines):
@@ -273,24 +268,24 @@ def render_poster(quote_body, author_name, category, prompt, main_font_path, bra
             open_quote = "“"
             q_bbox = quote_mark_font.getbbox(open_quote)
             q_w = q_bbox[2] - q_bbox[0]
-            draw.text((line_x - q_w - 4, current_y - 8), open_quote, font=quote_mark_font, fill=COLOR_QUOTE_MARK, anchor="la")
+            draw.text((line_x - q_w - 6, current_y - 10), open_quote, font=quote_mark_font, fill=COLOR_QUOTE_MARK, anchor="la")
 
         draw.text((line_x, current_y), line, font=font, fill=COLOR_TEXT, anchor="la")
 
         if i == len(wrapped_lines) - 1:
             close_quote = "”"
-            draw.text((line_x + line_w + 2, current_y - 8), close_quote, font=quote_mark_font, fill=COLOR_QUOTE_MARK, anchor="la")
+            draw.text((line_x + line_w + 4, current_y - 10), close_quote, font=quote_mark_font, fill=COLOR_QUOTE_MARK, anchor="la")
 
         current_y += int(line_heights[i] * 1.3) + line_spacing
 
-    # 5. Author Name
+    # 5. Author Name (INCREASED FONT SIZE: 38 -> 48)
     if author_name:
-        author_font = ImageFont.truetype(main_font_path, size=38, layout_engine=ImageFont.Layout.RAQM)
-        draw.text((W / 2, current_y + 35), author_name.upper(), font=author_font, fill=COLOR_AUTHOR, anchor="ma")
+        author_font = ImageFont.truetype(main_font_path, size=48, layout_engine=ImageFont.Layout.RAQM)
+        draw.text((W / 2, current_y + 40), author_name.upper(), font=author_font, fill=COLOR_AUTHOR, anchor="ma")
 
-    # 6. Footer Branding
-    brand_font = ImageFont.truetype(brand_font_path, size=52, layout_engine=ImageFont.Layout.RAQM)
-    draw.text((W / 2, H - 90), BRAND_NAME, font=brand_font, fill=COLOR_BRAND, anchor="mm")
+    # 6. Footer Branding (INCREASED FONT SIZE: 52 -> 68)
+    brand_font = ImageFont.truetype(brand_font_path, size=68, layout_engine=ImageFont.Layout.RAQM)
+    draw.text((W / 2, H - 85), BRAND_NAME, font=brand_font, fill=COLOR_BRAND, anchor="mm")
 
     return img.convert('RGB')
 
