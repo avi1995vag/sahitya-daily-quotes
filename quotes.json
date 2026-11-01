@@ -1,6 +1,38 @@
 [
   {
     "category": "daily_special",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/daily_special/New Project (14).jpg"
+  },
+  {
+    "category": "daily_special",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/daily_special/New Project (15).jpg"
+  },
+  {
+    "category": "daily_special",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/daily_special/New Project (16).jpg"
+  },
+  {
+    "category": "daily_special",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/daily_special/New Project (17).jpg"
+  },
+  {
+    "category": "daily_special",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/daily_special/New Project (18).jpg"
+  },
+  {
+    "category": "daily_special",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/daily_special/New Project (19).jpg"
+  },
+  {
+    "category": "daily_special",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/daily_special/New Project (20).jpg"
+  },
+  {
+    "category": "daily_special",
+    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/daily_special/New Project (21).jpg"
+  },
+  {
+    "category": "daily_special",
     "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/daily_special/dailyspecialtest.jpg"
   },
   {
@@ -26,10 +58,6 @@
   {
     "category": "daily_special",
     "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/daily_special/quote_20261101_ded451be.png"
-  },
-  {
-    "category": "daily_special",
-    "imageUrl": "https://cdn.jsdelivr.net/gh/avi1995vag/sahitya-daily-quotes@main/images/daily_special/treeday.jpg"
   },
   {
     "category": "inspirational",
